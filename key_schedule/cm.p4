@@ -66,35 +66,35 @@ header_type tcp_t {
 header tcp_t tcp;
 //==========================================================================================================
 header_type udp_t {
-	fields {
-		srcPort : 16;
+    fields {
+        srcPort : 16;
         dstPort : 16;
-		udplen : 16;
-		udpchk : 16;
-	}
+        udplen : 16;
+        udpchk : 16;
+    }
 }
 header udp_t udp;
 //==========================================================================================================
 header_type req_t {
-	fields {
-		key1 : 32;
-		key2 : 32;
-	}
+    fields {
+        key1 : 32;
+        key2 : 32;
+    }
 }
 header req_t req;
 //==========================================================================================================
 header_type cm_metadata_t {
     fields {
-		cm_count : 32; //count of this key
-		cm_partition: 32; //assigned core of this key
-	}
+        cm_count : 32; //count of this key
+        cm_partition: 32; //assigned core of this key
+    }
 }
 metadata cm_metadata_t cm_metadata;
 //==========================================================================================================
 header_type intrinsic_metadata_t {
-	fields {
-		ingress_global_tstamp : 32;
-	}
+    fields {
+        ingress_global_tstamp : 32;
+    }
 }
 metadata intrinsic_metadata_t intrinsic_metadata;
 //==========================================================================================================
@@ -122,44 +122,44 @@ parser parse_ipv4 {
 }
 
 parser parse_tcp {
-	extract(tcp);
-	return parse_req; 
+    extract(tcp);
+    return parse_req; 
 }
 
 parser parse_udp {
-	extract(udp);
-	return parse_req; 
+    extract(udp);
+    return parse_req; 
 }
 
 parser parse_req {
-	extract(req);
-	return ingress;
+    extract(req);
+    return ingress;
 }
 //==========================================================================================================
 //Ingress
 //==========================================================================================================
 primitive_action primitive_cm_finder();
-action do_cm_finder() {	
-	primitive_cm_finder();
-	// modify_field(req.key1, cm_metadata.cm_count); //for test
+action do_cm_finder() { 
+    primitive_cm_finder();
+    modify_field(req.key1, cm_metadata.cm_count); //for test and comment off this bank will make a mistake
 }
 @pragma netro no_lookup_caching do_cm_finder;
 table cm_finder {
-	actions {
-		do_cm_finder;
-	}
+    actions {
+        do_cm_finder;
+    }
 }
 //==========================================================================================================
-primitive_action primitive_schedual();
-action do_schedual() {
-	primitive_schedual();
-	// modify_field(req.key1, cm_metadata.cm_partition); //for test
+primitive_action primitive_schedule();
+action do_schedule() {
+    primitive_schedule();
+    modify_field(req.key2, cm_metadata.cm_partition); //for test and comment off this bank will make a mistake
 }
-@pragma netro no_lookup_caching do_schedual;
-table schedual {
-	actions {
-		do_schedual;
-	}
+@pragma netro no_lookup_caching do_schedule;
+table schedule {
+    actions {
+        do_schedule;
+    }
 }
 //==========================================================================================================
 action do_forward(port) {
@@ -168,7 +168,7 @@ action do_forward(port) {
 
 action do_drop()
 {
-	drop();
+    drop();
 }
 
 table forward {
@@ -176,17 +176,17 @@ table forward {
         standard_metadata.ingress_port : exact;
     }
     actions {
-		do_forward;
-		do_drop;
+        do_forward;
+        do_drop;
     }
 }
 //==========================================================================================================
 control ingress {
-	if (standard_metadata.ingress_port == 1) {
-		apply(cm_finder);
-		apply(schedual);
-	}
-	apply(forward);
+    if (standard_metadata.ingress_port == 1) {
+        apply(cm_finder);
+        apply(schedule);
+    }
+    apply(forward);
 }
 
 //==========================================================================================================

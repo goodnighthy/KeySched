@@ -40,10 +40,10 @@
 					"action" : { "type" : "do_acm_finder" }
 				}
 			},
-			"schedual" : {
+			"schedule" : {
 				"default_rule" : {
 					"name" : "default",
-					"action" : { "type" : "do_schedual" }
+					"action" : { "type" : "do_schedule" }
 				}
 			}
 		}

@@ -25,16 +25,15 @@
 #define SKETCH_COLUMN_COUNT 1024 //slots number of count-min sketch
 #define SKETCH_COLUMN_COUNT_MASK (SKETCH_COLUMN_COUNT-1)
 
-#define PARTITION_COUNT 32 //the core of key-value store
+#define PARTITION_COUNT 8 //the core of key-value store
 #define PARTITION_COUNT_MASK (PARTITION_COUNT-1)
 #define SCHEDULE_COUNT 128 //entries number of schedule mapping table
 #define SCHEDULE_COUNT_MASK (SCHEDULE_COUNT-1)
-#define OVERLOAD 64 //heavy key detect threshold
+#define OVERLOAD 32 //heavy key detect threshold
 
 __export __mem static uint32_t sketch[3][SKETCH_COLUMN_COUNT][2] = {0}; //count and timeslot stored in each entry
 __export __mem static uint32_t partition[PARTITION_COUNT] = {0}; //load of each core
 __export __mem static uint32_t schedule[SCHEDULE_COUNT][2] = {0}; //mapping and timeslot stored in each entry
-
 //=============================================================================================================
 uint32_t hash_func1(uint32_t key1)
 {
@@ -138,11 +137,10 @@ int pif_plugin_primitive_cm_finder(EXTRACTED_HEADERS_T *headers, MATCH_DATA_T *m
 	
 	pif_plugin_meta_set__cm_metadata__cm_count(headers, out_reg_sketch_min);
 
-	//mem_write32(&xfer_out, &lock, sizeof(uint32_t));
 	return PIF_PLUGIN_RETURN_FORWARD;
 }
 
-int piflelugin_primitive_schedule(EXTRACTED_HEADERS_T *headers, MATCH_DATA_T *match_data)
+int pif_plugin_primitive_schedule(EXTRACTED_HEADERS_T *headers, MATCH_DATA_T *match_data)
 {
 	__xread uint32_t in_xfer_schedule, in_xfer_partition, in_xfer_term;
 	__gpr uint32_t out_reg_schedule, out_reg_partition, out_reg_term;
@@ -163,14 +161,14 @@ int piflelugin_primitive_schedule(EXTRACTED_HEADERS_T *headers, MATCH_DATA_T *ma
 		mem_write32(&out_xfer_partition, &partition[hp], sizeof(uint32_t));
 	} else {
 		timestamp = pif_plugin_meta_get__intrinsic_metadata__ingress_global_tstamp(headers);
-		term = (timestamp >> 21) & 0x7;//about 1.5ms
+		term = (timestamp >> 21) & 0x7; //about 1.5ms
 		hs = hash_schedule(key1);
 		mem_read32(&in_xfer_schedule, &schedule[hs][0], sizeof(uint32_t));
 		out_reg_schedule = in_xfer_schedule;
 		mem_read32(&in_xfer_term, &schedule[hs][1], sizeof(uint32_t));
 		out_reg_term = in_xfer_term;
 		if (term == out_reg_term) {
-			pif_plugin_meta_set__cm_metadeta__cm_partition(headers, out_reg_schedule); 
+			pif_plugin_meta_set__cm_metadata__cm_partition(headers, out_reg_schedule); 
 			mem_read32(&in_xfer_partition, &partition[out_reg_schedule], sizeof(uint32_t));
 			out_reg_partition = in_xfer_partition;
 			out_reg_partition += 1;
